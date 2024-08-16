@@ -34,20 +34,20 @@ migrate = Migrate(app, db)
 # Models.
 #----------------------------------------------------------------------------#
 
-class Genre(db.Model):
-    __tablename__ = 'Genre'
+class Category(db.Model):
+    __tablename__ = 'Category'
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
 
 
-artist_genre_table = db.Table('artist_genre_table',
-    db.Column('genre_id', db.Integer, db.ForeignKey('Genre.id'), primary_key=True),
+artist_category_table = db.Table('artist_category_table',
+    db.Column('category_id', db.Integer, db.ForeignKey('Category.id'), primary_key=True),
     db.Column('artist_id', db.Integer, db.ForeignKey('Artist.id'), primary_key=True)
 )
 
-venue_genre_table = db.Table('venue_genre_table',
-    db.Column('genre_id', db.Integer, db.ForeignKey('Genre.id'), primary_key=True),
+venue_category_table = db.Table('venue_category_table',
+    db.Column('category_id', db.Integer, db.ForeignKey('Category.id'), primary_key=True),
     db.Column('venue_id', db.Integer, db.ForeignKey('Venue.id'), primary_key=True)
 )
 
@@ -64,7 +64,7 @@ class Venue(db.Model):
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
 
-    genres = db.relationship('Genre', secondary=venue_genre_table, backref=db.backref('venues'))
+    genres = db.relationship('Category', secondary=venue_category_table, backref=db.backref('venues'))
     
     website = db.Column(db.String(120))
     seeking_talent = db.Column(db.Boolean, default=False)
@@ -89,8 +89,7 @@ class Artist(db.Model):
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
 
-    # Here we link the associative table for the m2m relationship with genre
-    genres = db.relationship('Genre', secondary=artist_genre_table, backref=db.backref('artists'))
+    genres = db.relationship('Category', secondary=artist_category_table, backref=db.backref('artists'))
     
 
     website = db.Column(db.String(120))
@@ -267,8 +266,7 @@ def show_venue(venue_id):
         # Redirect home
         return redirect(url_for('index'))
     else:
-        # genres needs to be a list of genre strings for the template
-        genres = [ genre.name for genre in venue.genres ]
+        genres = [ category.name for category in venue.genres ]
         
         # Get a list of shows, and count the ones in the past and future
         past_shows = []
@@ -432,23 +430,19 @@ def create_venue_submission():
 
         # Insert form data into DB
         try:
-            # creates the new venue with all fields but not genre yet
             new_venue = Venue(name=name, city=city, state=state, address=address, phone=phone, \
                 seeking_talent=seeking_talent, seeking_description=seeking_description, image_link=image_link, \
                 website=website, facebook_link=facebook_link)
            
-            for genre in genres:
-                # fetch_genre = session.query(Genre).filter_by(name=genre).one_or_none()  # Throws an exception if more than one returned, returns None if none
-                fetch_genre = Genre.query.filter_by(name=genre).one_or_none()  # Throws an exception if more than one returned, returns None if none
-                if fetch_genre:
-                    # if found a genre, append it to the list
-                    new_venue.genres.append(fetch_genre)
+            for category in genres:
+                fetch_category = Category.query.filter_by(name=category).one_or_none()  # Throws an exception if more than one returned, returns None if none
+                if fetch_category:
+                    new_venue.genres.append(fetch_category)
 
                 else:
-                    # fetch_genre was None. It's not created yet, so create it
-                    new_genre = Genre(name=genre)
-                    db.session.add(new_genre)
-                    new_venue.genres.append(new_genre)  # Create a new Genre item and append it
+                    new_category = Category(name=category)
+                    db.session.add(new_category)
+                    new_venue.genres.append(new_category)  
 
             db.session.add(new_venue)
             db.session.commit()
@@ -568,8 +562,7 @@ def show_artist(artist_id):
         # Redirect home
         return redirect(url_for('index'))
     else:
-        # genres needs to be a list of genre strings for the template
-        genres = [ genre.name for genre in artist.genres ]
+        genres = [ category.name for category in artist.genres ]
         
         # Get a list of shows, and count the ones in the past and future
         past_shows = []
@@ -705,8 +698,7 @@ def edit_artist(artist_id):
        
         form = ArtistForm(obj=artist)
 
-    # genres needs to be a list of genre strings for the template
-    genres = [ genre.name for genre in artist.genres ]
+    genres = [ category.name for category in artist.genres ]
     
     artist = {
         "id": artist_id,
@@ -786,28 +778,19 @@ def edit_artist_submission(artist_id):
             artist.website = website
             artist.facebook_link = facebook_link
 
-            # First we need to clear (delete) all the existing genres off the artist otherwise it just adds them
             
-            # For some reason this didn't work! Probably has to do with flushing/lazy, etc.
-            # for genre in artist.genres:
-            #     artist.genres.remove(genre)
-                        
-            # artist.genres.clear()  # Either of these work.
             artist.genres = []
             
-            # genres can't take a list of strings, it needs to be assigned to db objects
-            # genres from the form is like: ['Alternative', 'Classical', 'Country']
-            for genre in genres:
-                fetch_genre = Genre.query.filter_by(name=genre).one_or_none()  # Throws an exception if more than one returned, returns None if none
-                if fetch_genre:
-                    # if found a genre, append it to the list
-                    artist.genres.append(fetch_genre)
+           
+            for category in genres:
+                fetch_category = Category.query.filter_by(name=category).one_or_none()  # Throws an exception if more than one returned, returns None if none
+                if fetch_category:
+                    artist.genres.append(fetch_category)
 
                 else:
-                    # fetch_genre was None. It's not created yet, so create it
-                    new_genre = Genre(name=genre)
-                    db.session.add(new_genre)
-                    artist.genres.append(new_genre)  # Create a new Genre item and append it
+                    new_category = Category(name=category)
+                    db.session.add(new_category)
+                    artist.genres.append(new_category)  
 
             # Attempt to save everything
             db.session.commit()
@@ -842,8 +825,7 @@ def edit_venue(venue_id):
 
     # Prepopulate the form with the current values.  This is only used by template rendering!
     
-    # genres needs to be a list of genre strings for the template
-    genres = [ genre.name for genre in venue.genres ]
+    genres = [ category.name for category in venue.genres ]
     
     venue = {
         "id": venue_id,
@@ -928,17 +910,15 @@ def edit_venue_submission(venue_id):
             venue.genres = []
             
            
-            for genre in genres:
-                fetch_genre = Genre.query.filter_by(name=genre).one_or_none()  # Throws an exception if more than one returned, returns None if none
-                if fetch_genre:
-                    # if found a genre, append it to the list
-                    venue.genres.append(fetch_genre)
+            for category in genres:
+                fetch_category = Category.query.filter_by(name=category).one_or_none()  # Throws an exception if more than one returned, returns None if none
+                if fetch_category:
+                    venue.genres.append(fetch_category)
 
                 else:
-                    # fetch_genre was None. It's not created yet, so create it
-                    new_genre = Genre(name=genre)
-                    db.session.add(new_genre)
-                    venue.genres.append(new_genre)  # Create a new Genre item and append it
+                    new_category = Category(name=category)
+                    db.session.add(new_category)
+                    venue.genres.append(new_category)  # Create a new Genre item and append it
 
             # Attempt to save everything
             db.session.commit()
@@ -997,24 +977,19 @@ def create_artist_submission():
 
         # Insert form data into DB
         try:
-            # creates the new artist with all fields but not genre yet
             new_artist = Artist(name=name, city=city, state=state, phone=phone, \
                 seeking_venue=seeking_venue, seeking_description=seeking_description, image_link=image_link, \
                 website=website, facebook_link=facebook_link)
-            # genres can't take a list of strings, it needs to be assigned to db objects
-            # genres from the form is like: ['Alternative', 'Classical', 'Country']
-            for genre in genres:
-                # fetch_genre = session.query(Genre).filter_by(name=genre).one_or_none()  # Throws an exception if more than one returned, returns None if none
-                fetch_genre = Genre.query.filter_by(name=genre).one_or_none()  # Throws an exception if more than one returned, returns None if none
-                if fetch_genre:
-                    # if found a genre, append it to the list
-                    new_artist.genres.append(fetch_genre)
+           
+            for category in genres:
+                fetch_category = Category.query.filter_by(name=category).one_or_none()  # Throws an exception if more than one returned, returns None if none
+                if fetch_category:
+                    new_artist.genres.append(fetch_category)
 
                 else:
-                    # fetch_genre was None. It's not created yet, so create it
-                    new_genre = Genre(name=genre)
-                    db.session.add(new_genre)
-                    new_artist.genres.append(new_genre)  # Create a new Genre item and append it
+                    new_category = Category(name=category)
+                    db.session.add(new_category)
+                    new_artist.genres.append(new_category)  
 
             db.session.add(new_artist)
             db.session.commit()

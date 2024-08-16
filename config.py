@@ -9,4 +9,4 @@ SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 # Connect to the database
 # toy password for assignment (Windows required it), not real world best practice!
-SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:root@localhost:5432/fyyur'
+SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:root@localhost:5432/fyyur01'
