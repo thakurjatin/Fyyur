@@ -13,6 +13,10 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/thakurjatin/Fyyur/issues"
+  },
+  "homepage": "https://github.com/thakurjatin/Fyyur#readme",
   "dependencies": {
     "bootstrap": "^3.4.1"
   }
