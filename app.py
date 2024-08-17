@@ -4,7 +4,7 @@
 
 import json
 import dateutil.parser
-import babel
+import babel 
 from flask import Flask, render_template, request, Response, flash, redirect, url_for, abort, jsonify
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
@@ -121,13 +121,13 @@ class Show(db.Model):
 #----------------------------------------------------------------------------#
 
 
-def format_datetime(value, format='medium'):
+def format_datetime(value, format='medium', locale='en_US'):
     date = dateutil.parser.parse(value)
     if format == 'full':
         format = "EEEE MMMM, d, y 'at' h:mma"
     elif format == 'medium':
         format = "EE MM, dd, y h:mma"
-    return babel.dates.format_datetime(date, format)
+    return babel.dates.format_datetime(date, format, locale=locale)
 
 
 app.jinja_env.filters['datetime'] = format_datetime
@@ -1125,7 +1125,7 @@ def create_show_submission():
         db.session.commit()
     except:
         error_in_insert = True
-        print(f'Exception "{e}" in create_show_submission()')
+       # print(f'Exception "{e}" in create_show_submission()')
         db.session.rollback()
     finally:
         db.session.close()
